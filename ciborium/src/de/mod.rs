@@ -46,7 +46,14 @@ impl<E: de::Error> Expected<E> for Header {
     }
 }
 
-struct Deserializer<'b, R: Read> {
+/// The default number of bytes of scratch buffer recommended for Deserializer for most use cases.
+pub const DEFAULT_SCRATCH_SIZE: usize = 4096;
+
+/// The default recursion depth limit recommended for Deserializer for most use cases.
+pub const DEFAULT_RECURSION_LIMIT: usize = 256;
+
+/// A structure for deserializing CBOR into Rust values.
+pub struct Deserializer<'b, R: Read> {
     decoder: Decoder<R>,
     scratch: &'b mut [u8],
     recurse: usize,
@@ -56,6 +63,65 @@ impl<'de, 'a, 'b, R: Read> Deserializer<'b, R>
 where
     R::Error: core::fmt::Debug,
 {
+    /// Create a CBOR deserializer from one of the possible ciborium input sources.
+    ///
+    /// This is functionally equivalent to `Deserializer::from_reader` but included for feature
+    /// parity with other commonly used serde implementations, namely serde_json. It is generally
+    /// better practice to be explicit and use either `Deserializer::from_bytes` or
+    /// `Deserializer::from_reader` for instantiating a new `Deserializer`.
+    ///
+    /// ciborium additionally leaves the choice of scratch space allocation and the recursion limit
+    /// up to the user to allow for use in resource constrained environments. In general, 4 kiB of
+    /// scratch is sufficient for most use cases as is a recursion depth of 256. These are exposed
+    /// as the consts `DEFAULT_SCRATCH_SIZE` and `DEFAULT_RECURSION_LIMIT`. For example, you can
+    /// instantiate a `Deserializer` with `Deserializer::new` with these defaults as follows:
+    ///
+    /// ```
+    /// use std::io::{self, Read};
+    ///
+    /// use ciborium::de;
+    ///
+    /// let mut scratch = [0u8; de::DEFAULT_SCRATCH_SIZE];
+    ///
+    /// let deserializer = de::Deserializer::new(
+    ///     io::stdin(),
+    ///     &mut scratch,
+    ///     de::DEFAULT_RECURSION_LIMIT
+    /// );
+    ///
+    /// ```
+    pub fn new(read: R, scratch: &'b mut [u8], recurse: usize) -> Self {
+        Self {
+            decoder: read.into(),
+            scratch,
+            recurse,
+        }
+    }
+
+    /// Creates a CBOR deserializer from a `ciborium_io::Read`.
+    ///
+    /// ciborium additionally leaves the choice of scratch space allocation and the recursion limit
+    /// up to the user to allow for use in resource constrained environments. In general, 4 kiB of
+    /// scratch is sufficient for most use cases as is a recursion depth of 256. These are exposed
+    /// as the consts `DEFAULT_SCRATCH_SIZE` and `DEFAULT_RECURSION_LIMIT`. For example, you can
+    /// instantiate a `Deserializer` with `Deserializer::from_reader` with these defaults as follows:
+    /// ```
+    /// use std::io::{self, Read};
+    ///
+    /// use ciborium::de;
+    ///
+    /// let mut scratch = [0u8; de::DEFAULT_SCRATCH_SIZE];
+    ///
+    /// let deserializer = de::Deserializer::from_reader(
+    ///     io::stdin(),
+    ///     &mut scratch,
+    ///     de::DEFAULT_RECURSION_LIMIT
+    /// );
+    /// ```
+    pub fn from_reader(reader: R, scratch: &'b mut [u8], recurse: usize) -> Self {
+        Self::new(reader, scratch, recurse)
+    }
+
     #[inline]
     fn recurse<V, F: FnOnce(&mut Self) -> Result<V, Error<R::Error>>>(
         &mut self,
@@ -116,6 +182,34 @@ where
                 h => Err(h.expected("bytes")),
             };
         }
+    }
+}
+
+impl<'de, 'a, 'b> Deserializer<'b, &'a [u8]> {
+    /// Creates a CBOR deserializer from a `&[u8]`.
+    ///
+    /// ciborium additionally leaves the choice of scratch space allocation and the recursion limit
+    /// up to the user to allow for use in resource constrained environments. In general, 4 kiB of
+    /// scratch is sufficient for most use cases as is a recursion depth of 256. These are exposed
+    /// as the consts `DEFAULT_SCRATCH_SIZE` and `DEFAULT_RECURSION_LIMIT`. For example, you can
+    /// instantiate a `Deserializer` with `Deserializer::from_slice` with these defaults as follows:
+    ///
+    /// ```
+    /// use ciborium::de;
+    ///
+    /// // CBOR for [1, 2, 3].
+    /// let cbor: [u8; 4] = [0x83, 0x01, 0x02, 0x03];
+    ///
+    /// let mut scratch = [0u8; de::DEFAULT_SCRATCH_SIZE];
+    ///
+    /// let deserializer = de::Deserializer::from_slice(
+    ///     &cbor,
+    ///     &mut scratch,
+    ///     de::DEFAULT_RECURSION_LIMIT
+    /// );
+    /// ```
+    pub fn from_slice(bytes: &'a [u8], scratch: &'b mut [u8], recurse: usize) -> Self {
+        Self::new(bytes.into(), scratch, recurse)
     }
 }
 
@@ -560,6 +654,14 @@ where
         false
     }
 }
+
+// TODO: implement Serializer::end (would require adding additional functionality to Decoder in
+// ciborium-ll).
+
+// TODO: implement Serializer::into_iter (which would generate a StreamDeserializer, which itself
+// is not yet implemented).
+
+// TODO: implement StreamDeserializer.
 
 struct Access<'a, 'b, R: Read>(&'a mut Deserializer<'b, R>, Option<usize>);
 
