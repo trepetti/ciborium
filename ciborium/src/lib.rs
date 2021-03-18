@@ -210,3 +210,7 @@ macro_rules! cbor {
         $crate::value::Value::serialized(&$val)
     }};
 }
+
+// Top-level library export by analogy with serde_json.
+pub use de::{Deserializer, DEFAULT_RECURSION_LIMIT, DEFAULT_SCRATCH_SIZE};
+pub use ser::Serializer;

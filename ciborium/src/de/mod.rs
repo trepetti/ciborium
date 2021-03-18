@@ -79,16 +79,11 @@ where
     /// ```
     /// use std::io::{self, Read};
     ///
-    /// use ciborium::de;
+    /// use ciborium::{Deserializer, DEFAULT_RECURSION_LIMIT, DEFAULT_SCRATCH_SIZE};
     ///
-    /// let mut scratch = [0u8; de::DEFAULT_SCRATCH_SIZE];
+    /// let mut scratch = [0u8; DEFAULT_SCRATCH_SIZE];
     ///
-    /// let deserializer = de::Deserializer::new(
-    ///     io::stdin(),
-    ///     &mut scratch,
-    ///     de::DEFAULT_RECURSION_LIMIT
-    /// );
-    ///
+    /// let deserializer = Deserializer::new(io::stdin(), &mut scratch, DEFAULT_RECURSION_LIMIT);
     /// ```
     pub fn new(read: R, scratch: &'b mut [u8], recurse: usize) -> Self {
         Self {
@@ -108,14 +103,14 @@ where
     /// ```
     /// use std::io::{self, Read};
     ///
-    /// use ciborium::de;
+    /// use ciborium::{Deserializer, DEFAULT_RECURSION_LIMIT, DEFAULT_SCRATCH_SIZE};
     ///
-    /// let mut scratch = [0u8; de::DEFAULT_SCRATCH_SIZE];
+    /// let mut scratch = [0u8; DEFAULT_SCRATCH_SIZE];
     ///
-    /// let deserializer = de::Deserializer::from_reader(
+    /// let deserializer = Deserializer::from_reader(
     ///     io::stdin(),
     ///     &mut scratch,
-    ///     de::DEFAULT_RECURSION_LIMIT
+    ///     DEFAULT_RECURSION_LIMIT
     /// );
     /// ```
     pub fn from_reader(reader: R, scratch: &'b mut [u8], recurse: usize) -> Self {
@@ -195,17 +190,17 @@ impl<'de, 'a, 'b> Deserializer<'b, &'a [u8]> {
     /// instantiate a `Deserializer` with `Deserializer::from_slice` with these defaults as follows:
     ///
     /// ```
-    /// use ciborium::de;
+    /// use ciborium::{Deserializer, DEFAULT_RECURSION_LIMIT, DEFAULT_SCRATCH_SIZE};
     ///
     /// // CBOR for [1, 2, 3].
     /// let cbor: [u8; 4] = [0x83, 0x01, 0x02, 0x03];
     ///
-    /// let mut scratch = [0u8; de::DEFAULT_SCRATCH_SIZE];
+    /// let mut scratch = [0u8; DEFAULT_SCRATCH_SIZE];
     ///
-    /// let deserializer = de::Deserializer::from_slice(
+    /// let deserializer = Deserializer::from_slice(
     ///     &cbor,
     ///     &mut scratch,
-    ///     de::DEFAULT_RECURSION_LIMIT
+    ///     DEFAULT_RECURSION_LIMIT
     /// );
     /// ```
     pub fn from_slice(bytes: &'a [u8], scratch: &'b mut [u8], recurse: usize) -> Self {
