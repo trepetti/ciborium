@@ -650,10 +650,10 @@ where
     }
 }
 
-// TODO: implement Serializer::end (would require adding additional functionality to Decoder in
+// TODO: implement Deserializer::end (would require adding additional functionality to Decoder in
 // ciborium-ll).
 
-// TODO: implement Serializer::into_iter (which would generate a StreamDeserializer, which itself
+// TODO: implement Desrializer::into_iter (which would generate a StreamDeserializer, which itself
 // is not yet implemented).
 
 // TODO: implement StreamDeserializer.
